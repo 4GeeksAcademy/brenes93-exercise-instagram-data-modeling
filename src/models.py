@@ -1,26 +1,66 @@
 import os
 import sys
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column
-from sqlalchemy import create_engine
+from typing import List 
+from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship, DeclarativeBase
 from eralchemy2 import render_er
+from sqlalchemy import ForeignKey, String, create_engine, Column, Table, Integer
 
 Base = declarative_base()
 
-class Person(Base):
-    __tablename__ = 'person'
+
+follower = Table(
+    "follower",
+    Base.metadata,
+    Column("user_from_id", ForeignKey("user.id")),
+    Column("user_to_id", ForeignKey("user.id")),
+)
+
+class User(Base):
+    __tablename__ = 'user'
     # Here we define columns for the table person
     # Notice that each column is also a normal Python instance attribute.
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(nullable=False)
+    username: Mapped[str] = mapped_column(nullable=False, unique=True)
+    firstname: Mapped[str] = mapped_column(nullable=False)
+    lastname: Mapped[str] = mapped_column(nullable=False)
+    email: Mapped[str] = mapped_column(String(80), nullable=False, unique=True)
+    comment: Mapped[List["Comment"]] = relationship(back_populates="user")
+    post: Mapped[List["Post"]] = relationship(back_populates="user") 
 
-class Address(Base):
-    __tablename__ = 'address'
+    
+
+
+
+class Media(Base):
+    __tablename__ = 'media'
     # Here we define columns for the table address.
     # Notice that each column is also a normal Python instance attribute.
     id: Mapped[int] = mapped_column(primary_key=True)
-    street_name: Mapped[str]
-    street_number: Mapped[str]
-    post_code: Mapped[str] = mapped_column(nullable=False)
+    type: Mapped[str] = mapped_column(nullable=False)
+    url: Mapped[str] = mapped_column(nullable=False)
+    post_id: Mapped[int] = mapped_column(ForeignKey("post.id")) 
+    post: Mapped["Post"] = relationship(back_populates="media")   
+
+class Post(Base):
+    __tablename__ = 'post'
+    # Here we define columns for the table address.
+    # Notice that each column is also a normal Python instance attribute.
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id")) 
+    user: Mapped["User"] = relationship(back_populates="comment") 
+    media: Mapped[List["Media"]] = relationship(back_populates="post")  
+
+class Comment(Base):
+    __tablename__ = 'comment'
+    # Here we define columns for the table address.
+    # Notice that each column is also a normal Python instance attribute.
+    id: Mapped[int] = mapped_column(primary_key=True)
+    comment_text: Mapped[str] = mapped_column(String(80), nullable=False)
+    author_id: Mapped[int] = mapped_column(ForeignKey("author.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))    
+    post_id: Mapped[int] = mapped_column(ForeignKey("post.id"))    
+    user: Mapped["User"] = relationship(back_populates="comment")
+ 
 
     def to_dict(self):
         return {}
